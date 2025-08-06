@@ -354,7 +354,13 @@ if (CMAKE_BUILD_TYPE MATCHES Unittests)
 	set(LINK_FLAGS "${LINK_FLAGS} -no-pie -Wl,--no-export-dynamic")
 	add_executable(regamedll ${appversion.sh})
 else()
-	add_library(regamedll MODULE ${appversion.sh})
+	if (XASH_EMSCRIPTEN)
+		add_executable(regamedll ${appversion.sh})
+		target_compile_options(regamedll PRIVATE -fPIC -fvisibility=hidden)
+		target_link_options(regamedll PRIVATE -sSIDE_MODULE=1)
+	else ()
+		add_library(regamedll MODULE ${appversion.sh})
+	endif ()
 endif()
 
 if (NOT TARGET appversion)
@@ -445,6 +451,11 @@ if (XASH_COMPAT)
 		set_target_properties(regamedll PROPERTIES
 			PREFIX ""
 			OUTPUT_NAME mp${POSTFIX})
+	elseif (XASH_EMSCRIPTEN)
+		set_target_properties(regamedll PROPERTIES
+				PREFIX ""
+				OUTPUT_NAME cs${POSTFIX}
+				SUFFIX ".wasm")
 	else()
 		set_target_properties(regamedll PROPERTIES
 			PREFIX ""

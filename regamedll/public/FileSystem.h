@@ -37,6 +37,9 @@
 #ifdef _WIN32
 	#define STDIO_FILESYSTEM_LIB "filesystem_stdio.dll"
 	#define STEAM_FILESYSTEM_LIB "filesystem_steam.dll"
+#elif __EMSCRIPTEN__
+	#define STDIO_FILESYSTEM_LIB "filesystem_stdio.wasm"
+	#define STEAM_FILESYSTEM_LIB "filesystem_steam.wasm"
 #else
 	#define STDIO_FILESYSTEM_LIB "filesystem_stdio.so"
 	#define STEAM_FILESYSTEM_LIB "filesystem_steam.so"
