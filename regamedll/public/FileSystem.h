@@ -40,6 +40,9 @@
 #elif __EMSCRIPTEN__
 	#define STDIO_FILESYSTEM_LIB "filesystem_stdio.wasm"
 	#define STEAM_FILESYSTEM_LIB "filesystem_steam.wasm"
+#elif defined(__ANDROID__)
+    #define STDIO_FILESYSTEM_LIB "libfilesystem_stdio.so"
+    #define STEAM_FILESYSTEM_LIB "libfilesystem_steam.so"
 #else
 	#define STDIO_FILESYSTEM_LIB "filesystem_stdio.so"
 	#define STEAM_FILESYSTEM_LIB "filesystem_steam.so"
