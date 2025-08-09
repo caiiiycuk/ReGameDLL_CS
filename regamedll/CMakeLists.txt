@@ -451,7 +451,7 @@ if (XASH_COMPAT)
 		set_target_properties(regamedll PROPERTIES
 			PREFIX ""
 			OUTPUT_NAME mp${POSTFIX})
-	elseif (XASH_EMSCRIPTEN`)
+	elseif (XASH_EMSCRIPTEN)
 		set_target_properties(regamedll PROPERTIES
 				PREFIX ""
 				OUTPUT_NAME cs${POSTFIX}
