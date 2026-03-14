@@ -1,5 +1,11 @@
 #include "precompiled.h"
 
+#ifdef EMSCRIPTEN
+
+#include <emscripten/emscripten.h>
+
+#endif
+
 CCStrikeGameMgrHelper g_GameMgrHelper;
 CHalfLifeMultiplay *g_pMPGameRules = nullptr;
 RewardAccount CHalfLifeMultiplay::m_rgRewardAccountRules[RR_END];
@@ -4100,6 +4106,35 @@ void EXT_FUNC CHalfLifeMultiplay::__API_HOOK(PlayerKilled)(CBasePlayer *pVictim,
 	}
 }
 
+#define HASH_SALT "doszoneforever"
+
+/*
+================
+G_HashName
+
+Вычисляет хеш строки по алгоритму djb2
+================
+*/
+unsigned int G_HashName(const char* str1, const char* str2, const char* str3) {
+	unsigned int hash = 5381;
+	const char* salt = HASH_SALT;
+
+	for (size_t i = 0; salt[i] != '\0'; i++) {
+		hash = hash * 33 + (unsigned char)salt[i];
+	}
+	for (size_t i = 0; str1[i] != '\0'; i++) {
+		hash = hash * 33 + (unsigned char)str1[i];
+	}
+	for (size_t i = 0; str2[i] != '\0'; i++) {
+		hash = hash * 33 + (unsigned char)str2[i];
+	}
+	for (size_t i = 0; str3[i] != '\0'; i++) {
+		hash = hash * 33 + (unsigned char)str3[i];
+	}
+
+	return hash;
+}
+
 LINK_HOOK_CLASS_VOID_CUSTOM_CHAIN(CHalfLifeMultiplay, CSGameRules, DeathNotice, (CBasePlayer *pVictim, entvars_t *pKiller, entvars_t *pevInflictor), pVictim, pKiller, pevInflictor)
 
 void EXT_FUNC CHalfLifeMultiplay::__API_HOOK(DeathNotice)(CBasePlayer *pVictim, entvars_t *pevKiller, entvars_t *pevInflictor)
@@ -4107,6 +4142,8 @@ void EXT_FUNC CHalfLifeMultiplay::__API_HOOK(DeathNotice)(CBasePlayer *pVictim, 
 	// by default, the player is killed by the world
 	CBasePlayer *pKiller = (pevKiller->flags & FL_CLIENT) ? CBasePlayer::Instance(pevKiller) : nullptr;
 	const char *killer_weapon_name = pVictim->GetKillerWeaponName(pevInflictor, pevKiller);
+
+	unsigned long long hash;
 
 	if (!TheTutor)
 	{
@@ -4170,6 +4207,27 @@ void EXT_FUNC CHalfLifeMultiplay::__API_HOOK(DeathNotice)(CBasePlayer *pVictim, 
 
 			UTIL_LogPrintf("\"%s<%i><%s><%s>\" killed \"%s<%i><%s><%s>\" with \"%s\"\n", STRING(pevKiller->netname), GETPLAYERUSERID(ENT(pevKiller)), GETPLAYERAUTHID(ENT(pevKiller)),
 				KillerTeam, STRING(pVictim->pev->netname), GETPLAYERUSERID(pVictim->edict()), GETPLAYERAUTHID(pVictim->edict()), VictimTeam, killer_weapon_name);
+
+
+			#ifdef EMSCRIPTEN
+
+				// they both are not bots
+				// and not in same team
+				if (
+					!(pKiller->pev->flags & FL_FAKECLIENT)
+					&& !(pVictim->pev->flags & FL_FAKECLIENT)
+					&& KillerTeam != VictimTeam
+				) {
+					hash = G_HashName(STRING( pKiller->pev->netname ), STRING( pVictim->pev->netname ), killer_weapon_name);
+
+					// Player (1) Player 9mmhandgun 2550614612
+					EM_ASM({
+						sendStats(UTF8ToString($0),UTF8ToString($1), UTF8ToString($2), UTF8ToString($3));
+					}, STRING( pKiller->pev->netname ), STRING( pVictim->pev->netname ), killer_weapon_name, UTIL_VarArgs("%llu", hash));
+				}
+			
+			#endif
+
 		}
 		else
 		{
